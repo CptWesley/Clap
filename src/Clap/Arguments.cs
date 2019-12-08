@@ -133,17 +133,10 @@ namespace Clap
                             throw new Exception($"Option '{option}' was not recognized.");
                         }
                     }
-                    else
+                    else if (unnamedIndex < unnamedOptions.Length)
                     {
-                        if (unnamedIndex < unnamedOptions.Length)
-                        {
-                            property = unnamedOptions[unnamedIndex++];
-                            i--;
-                        }
-                        else
-                        {
-                            // Handle too many unnamed arguments.
-                        }
+                        property = unnamedOptions[unnamedIndex++];
+                        i--;
                     }
                 }
                 else if (property != null)
