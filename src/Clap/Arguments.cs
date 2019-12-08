@@ -437,6 +437,7 @@ namespace Clap
             else if (type == typeof(ulong)) return ulong.Parse(value, culture);
             else if (type == typeof(float)) return float.Parse(value, culture);
             else if (type == typeof(double)) return double.Parse(value, culture);
+            else if (type == typeof(decimal)) return decimal.Parse(value, culture);
             else if (type.IsEnum) return Enum.Parse(type, value, true);
 
             throw new CommandLineArgumentsException($"There is no support for arguments of type '{type.Name}'.");
