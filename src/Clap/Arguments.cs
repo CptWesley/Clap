@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 
 namespace Clap
@@ -101,9 +102,11 @@ namespace Clap
             HashSet<PropertyInfo> setOptions = new HashSet<PropertyInfo>();
 
             PropertyInfo property = null;
+            List<object> parsedArgs = new List<object>();
             string option = null;
-            foreach (string arg in args)
+            for (int i = 0; i < args.Length; i++)
             {
+                string arg = args[i];
                 if (property == null)
                 {
                     if (arg[0] == '-')
@@ -135,25 +138,96 @@ namespace Clap
                 }
                 else if (property != null)
                 {
-                    if (arg[0] == '-')
+                    if (IsArrayLike(property))
                     {
-                        throw new Exception($"Option '{option}' required a value.");
+                        if (arg[0] == '-')
+                        {
+                            EndArray(property, result, parsedArgs);
+                            property = null;
+                            i--;
+                        }
+                        else
+                        {
+                            Type elementType = GetArrayLikeElementType(property);
+                            object parsedArg = ParseValue(elementType, arg, culture);
+                            parsedArgs.Add(parsedArg);
+                        }
                     }
                     else
                     {
-                        object value = ParseValue(property.PropertyType, arg, culture);
-                        property.SetValue(result, value);
-                        property = null;
+                        if (arg[0] == '-')
+                        {
+                            throw new Exception($"Option '{option}' required a value.");
+                        }
+                        else
+                        {
+                            object value = ParseValue(property.PropertyType, arg, culture);
+                            property.SetValue(result, value);
+                            property = null;
+                        }
                     }
                 }
             }
 
             if (property != null)
             {
-                throw new Exception($"Option '{option}' required a value.");
+                if (IsArrayLike(property))
+                {
+                    EndArray(property, result, parsedArgs);
+                }
+                else
+                {
+                    throw new Exception($"Option '{option}' required a value.");
+                }
             }
 
             return result;
+        }
+
+        private static Type GetArrayLikeElementType(PropertyInfo property)
+        {
+            Type type = property.PropertyType;
+            if (type.IsArray)
+            {
+                return type.GetElementType();
+            }
+
+            return type.GetGenericArguments()[0];
+        }
+
+        private static bool IsArrayLike(PropertyInfo property)
+        {
+            Type type = property.PropertyType;
+            return type.IsArray || type.GetInterface("ICollection`1") != null;
+        }
+
+        private static void EndArray(PropertyInfo property, object result, List<object> parsedArgs)
+        {
+            object value;
+            if (property.PropertyType.IsArray)
+            {
+                Type elementType = GetArrayLikeElementType(property);
+                value = Array.CreateInstance(elementType, parsedArgs.Count);
+                Array array = value as Array;
+
+                for (int i = 0; i < array.Length; i++)
+                {
+                    array.SetValue(parsedArgs[i], i);
+                }
+            }
+            else
+            {
+                value = Activator.CreateInstance(property.PropertyType);
+                MethodInfo add = property.PropertyType.GetMethod("Add");
+
+                foreach (object parsedArg in parsedArgs)
+                {
+                    add.Invoke(value, new[] { parsedArg });
+                }
+            }
+
+            property.SetValue(result, value);
+            parsedArgs.Clear();
         }
 
         private static string[] SplitArgs(string args)
