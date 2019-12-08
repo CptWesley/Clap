@@ -122,9 +122,10 @@ namespace Clap
                                 throw new CommandLineArgumentsException($"Option '{option}' can not be set twice.");
                             }
 
+                            setOptions.Add(property);
+
                             if (property.PropertyType == typeof(bool))
                             {
-                                setOptions.Add(property);
                                 property.SetValue(result, true);
                                 property = null;
                             }
@@ -141,7 +142,7 @@ namespace Clap
                     }
                     else
                     {
-                        throw new CommandLineArgumentsException($"Unrecognized option/argument '{arg}'.");
+                        throw new CommandLineArgumentsException($"Unrecognized argument '{arg}'.");
                     }
                 }
                 else if (property != null)

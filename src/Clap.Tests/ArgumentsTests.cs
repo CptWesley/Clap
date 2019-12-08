@@ -71,8 +71,8 @@ namespace Clap.Tests
         [Fact]
         public static void MissingIntegerOption()
         {
-            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-value -x", CultureInfo.InvariantCulture)).ThrowsException();
-            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-value", CultureInfo.InvariantCulture)).ThrowsException();
+            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-value -x", CultureInfo.InvariantCulture)).ThrowsExactlyException<CommandLineArgumentsException>();
+            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-value", CultureInfo.InvariantCulture)).ThrowsExactlyException<CommandLineArgumentsException>();
         }
 
         /// <summary>
@@ -206,6 +206,36 @@ namespace Clap.Tests
             AssertThat(lines[3]).IsEqualTo("  -Operation -o    Create|Delete    Defines what type of operation we want to perform.");
             AssertThat(lines[4]).IsEqualTo("  -Recursive -r                     Indicates whether or not the operation should be performed recursively.");
             AssertThat(lines[5]).IsEqualTo("  -Match -m        <regex>          Represents the regular expression that needs to be matched.");
+        }
+
+        /// <summary>
+        /// Checks that setting an option twice causes an error.
+        /// </summary>
+        [Fact]
+        public static void DoubleOption()
+        {
+            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-value 42 -value 30", CultureInfo.InvariantCulture)).ThrowsExactlyException<CommandLineArgumentsException>();
+            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-v 42 -value 30", CultureInfo.InvariantCulture)).ThrowsExactlyException<CommandLineArgumentsException>();
+        }
+
+        /// <summary>
+        /// Checks that too many unnamed arguments gives an error.
+        /// </summary>
+        [Fact]
+        public static void TooManyUnnamed()
+        {
+            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("40", CultureInfo.InvariantCulture)).ThrowsExactlyException<CommandLineArgumentsException>();
+            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-v 42 30", CultureInfo.InvariantCulture)).ThrowsExactlyException<CommandLineArgumentsException>();
+        }
+
+        /// <summary>
+        /// Checks that unknown options give an error.
+        /// </summary>
+        [Fact]
+        public static void UnknownOption()
+        {
+            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-v 42 -x", CultureInfo.InvariantCulture)).ThrowsExactlyException<CommandLineArgumentsException>();
+            AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-x", CultureInfo.InvariantCulture)).ThrowsExactlyException<CommandLineArgumentsException>();
         }
 
         private class SingleBooleanOptions
