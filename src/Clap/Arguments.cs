@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace Clap
 {
@@ -185,6 +186,147 @@ namespace Clap
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Generate a help page for the given type.
+        /// </summary>
+        /// <typeparam name="T">Type of which to create a help page.</typeparam>
+        /// <returns>A help page as a string.</returns>
+        public static string GetHelpPage<T>()
+            => GetHelpPage(typeof(T));
+
+        /// <summary>
+        /// Generate a help page for the given type.
+        /// </summary>
+        /// <typeparam name="T">Type of which to create a help page.</typeparam>
+        /// <param name="programName">The name of the program in the console.</param>
+        /// <returns>A help page as a string.</returns>
+        public static string GetHelpPage<T>(string programName)
+            => GetHelpPage(typeof(T), programName);
+
+        /// <summary>
+        /// Generate a help page for the given type.
+        /// </summary>
+        /// <param name="type">Type of which to create a help page.</param>
+        /// <returns>A help page as a string.</returns>
+        public static string GetHelpPage(Type type)
+            => GetHelpPage(type, Environment.GetCommandLineArgs()[0]);
+
+        /// <summary>
+        /// Generate a help page for the given type.
+        /// </summary>
+        /// <param name="type">Type of which to create a help page.</param>
+        /// <param name="programName">The name of the program in the console.</param>
+        /// <returns>A help page as a string.</returns>
+        public static string GetHelpPage(Type type, string programName)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            PropertyInfo[] properties = type.GetProperties();
+            List<string> options = new List<string>();
+            List<string> arguments = new List<string>();
+            List<string> descriptions = new List<string>();
+            List<string> unnamedArgs = new List<string>();
+
+            for (int i = 0; i < properties.Length; i++)
+            {
+                PropertyInfo property = properties[i];
+                UnnamedAttribute unnamed = property.GetCustomAttribute<UnnamedAttribute>();
+                if (unnamed != null)
+                {
+                    unnamedArgs.Add(GetArgumentName(property));
+                }
+                else
+                {
+                    StringBuilder aliases = new StringBuilder();
+
+                    aliases.Append($"-{property.Name}");
+                    AliasAttribute aliasAttribute = property.GetCustomAttribute<AliasAttribute>();
+                    if (aliasAttribute != null)
+                    {
+                        foreach (string alias in aliasAttribute.Aliases)
+                        {
+                            aliases.Append($" -{alias}");
+                        }
+                    }
+
+                    DescriptionAttribute descAttr = property.GetCustomAttribute<DescriptionAttribute>();
+
+                    options.Add(aliases.ToString());
+                    arguments.Add(GetArgumentName(property));
+                    descriptions.Add(descAttr == null ? string.Empty : descAttr.Text);
+                }
+            }
+
+            int optionsLength = options.Max(x => x.Length);
+            int argumentsLength = arguments.Max(x => x.Length);
+
+            StringBuilder help = new StringBuilder();
+            DescriptionAttribute classDescAttr = type.GetCustomAttribute<DescriptionAttribute>();
+            if (classDescAttr != null && classDescAttr.Text != null)
+            {
+                help.AppendLine(classDescAttr.Text);
+            }
+
+            help.AppendLine($"Usage: {programName} [options] {string.Join(" ", unnamedArgs.Select(x => $"[{x}]"))}".Trim());
+            help.AppendLine("Options:");
+
+            for (int i = 0; i < options.Count; i++)
+            {
+                help.Append("  ").AppendLine($"{GetTextWithFiller(options[i], optionsLength + 4)}{GetTextWithFiller(arguments[i], argumentsLength + 4)}{descriptions[i]}".Trim());
+            }
+
+            return help.ToString();
+        }
+
+        private static string GetTextWithFiller(string text, int size)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(text);
+
+            for (int i = 0; i < size - text.Length; i++)
+            {
+                sb.Append(' ');
+            }
+
+            return sb.ToString();
+        }
+
+        private static string GetArgumentName(PropertyInfo property)
+        {
+            ArgumentNameAttribute attribute = property.GetCustomAttribute<ArgumentNameAttribute>();
+            if (IsArrayLike(property))
+            {
+                Type type = GetArrayLikeElementType(property);
+
+                return $"{GetArgumentName(type, attribute, "1")} {GetArgumentName(type, attribute, "2")} ...";
+            }
+
+            return GetArgumentName(property.PropertyType, attribute, string.Empty);
+        }
+
+        private static string GetArgumentName(Type type, ArgumentNameAttribute attribute, string suffix)
+        {
+            if (type == typeof(bool))
+            {
+                return string.Empty;
+            }
+
+            if (type.IsEnum)
+            {
+                return string.Join("|", Enum.GetNames(type));
+            }
+
+            if (attribute != null)
+            {
+                return $"<{attribute.Name}{suffix}>";
+            }
+
+            return $"<{type.Name}{suffix}>";
         }
 
         private static Type GetArrayLikeElementType(PropertyInfo property)

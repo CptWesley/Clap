@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Xunit;
@@ -191,6 +192,22 @@ namespace Clap.Tests
             AssertThat(options.Files).ContainsExactly("a.txt", "b.txt", "c.txt");
         }
 
+        /// <summary>
+        /// Checks that the help page is printed correctly.
+        /// </summary>
+        [Fact]
+        public static void HelpPage()
+        {
+            string page = Arguments.GetHelpPage<MixedWithUnnamedOptionsWithHelp>("oWo");
+            string[] lines = page.Split(Environment.NewLine);
+            AssertThat(lines[0]).IsEqualTo("Test application.");
+            AssertThat(lines[1]).IsEqualTo("Usage: oWo [options] [<file1> <file2> ...]");
+            AssertThat(lines[2]).IsEqualTo("Options:");
+            AssertThat(lines[3]).IsEqualTo("  -Operation -o    Create|Delete    Defines what type of operation we want to perform.");
+            AssertThat(lines[4]).IsEqualTo("  -Recursive -r                     Indicates whether or not the operation should be performed recursively.");
+            AssertThat(lines[5]).IsEqualTo("  -Match -m        <regex>          Represents the regular expression that needs to be matched.");
+        }
+
         private class SingleBooleanOptions
         {
             public bool Value { get; set; }
@@ -281,6 +298,33 @@ namespace Clap.Tests
 
             [Alias("o")]
             public OperationType Operation { get; set; }
+        }
+
+        [Description("Test application.")]
+        private class MixedWithUnnamedOptionsWithHelp
+        {
+            public enum OperationType
+            {
+                Create,
+                Delete,
+            }
+
+            [ArgumentName("file")]
+            [Unnamed]
+            public string[] Files { get; set; }
+
+            [Description("Defines what type of operation we want to perform.")]
+            [Alias("o")]
+            public OperationType Operation { get; set; }
+
+            [Description("Indicates whether or not the operation should be performed recursively.")]
+            [Alias("r")]
+            public bool Recursive { get; set; }
+
+            [Alias("m")]
+            [Description("Represents the regular expression that needs to be matched.")]
+            [ArgumentName("regex")]
+            public string Match { get; set; }
         }
     }
 }
