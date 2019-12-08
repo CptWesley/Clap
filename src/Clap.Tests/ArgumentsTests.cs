@@ -174,6 +174,23 @@ namespace Clap.Tests
             AssertThat(options.Value1).IsEqualTo(30);
         }
 
+        /// <summary>
+        /// Checks that we can correctly deal with combinations of named and unnamed options.
+        /// </summary>
+        /// <param name="input">The program arguments.</param>
+        [Theory]
+        [InlineData("-operation delete a.txt b.txt c.txt")]
+        [InlineData("-o delete a.txt b.txt c.txt")]
+        [InlineData("a.txt b.txt c.txt -operation delete")]
+        [InlineData("a.txt b.txt c.txt -o delete")]
+        public static void NamedAndUnnamed(string input)
+        {
+            MixedWithUnnamedOptions options = Arguments.Parse<MixedWithUnnamedOptions>(input, CultureInfo.InvariantCulture);
+            AssertThat(options).IsNotNull().IsExactlyInstanceOf<MixedWithUnnamedOptions>();
+            AssertThat(options.Operation).IsEqualTo(MixedWithUnnamedOptions.OperationType.Delete);
+            AssertThat(options.Files).ContainsExactly("a.txt", "b.txt", "c.txt");
+        }
+
         private class SingleBooleanOptions
         {
             public bool Value { get; set; }
@@ -249,6 +266,21 @@ namespace Clap.Tests
 
             [Unnamed(1)]
             public int Value2 { get; set; }
+        }
+
+        private class MixedWithUnnamedOptions
+        {
+            public enum OperationType
+            {
+                Create,
+                Delete,
+            }
+
+            [Unnamed]
+            public string[] Files { get; set; }
+
+            [Alias("o")]
+            public OperationType Operation { get; set; }
         }
     }
 }
