@@ -119,7 +119,7 @@ namespace Clap
                         {
                             if (setOptions.Contains(property))
                             {
-                                throw new Exception($"Option '{option}' can not be set twice.");
+                                throw new CommandLineArgumentsException($"Option '{option}' can not be set twice.");
                             }
 
                             if (property.PropertyType == typeof(bool))
@@ -131,13 +131,17 @@ namespace Clap
                         }
                         else
                         {
-                            throw new Exception($"Option '{option}' was not recognized.");
+                            throw new CommandLineArgumentsException($"Option '{option}' was not recognized.");
                         }
                     }
                     else if (unnamedIndex < unnamedOptions.Length)
                     {
                         property = unnamedOptions[unnamedIndex++];
                         i--;
+                    }
+                    else
+                    {
+                        throw new CommandLineArgumentsException($"Unrecognized option/argument '{arg}'.");
                     }
                 }
                 else if (property != null)
@@ -161,7 +165,7 @@ namespace Clap
                     {
                         if (arg[0] == '-')
                         {
-                            throw new Exception($"Option '{option}' required a value.");
+                            throw new CommandLineArgumentsException($"Option '{option}' required a value.");
                         }
                         else
                         {
@@ -181,7 +185,7 @@ namespace Clap
                 }
                 else
                 {
-                    throw new Exception($"Option '{option}' required a value.");
+                    throw new CommandLineArgumentsException($"Option '{option}' required a value.");
                 }
             }
 
@@ -411,7 +415,7 @@ namespace Clap
             string key = name.ToUpperInvariant();
             if (options.ContainsKey(key))
             {
-                throw new Exception($"Key '{name}' is used multiple times.");
+                throw new CommandLineArgumentsException($"Key '{name}' is used multiple times.");
             }
 
             options.Add(key, property);
@@ -434,7 +438,7 @@ namespace Clap
             else if (type == typeof(double)) return double.Parse(value, culture);
             else if (type.IsEnum) return Enum.Parse(type, value, true);
 
-            throw new Exception($"There is no support for arguments of type '{type.Name}'.");
+            throw new CommandLineArgumentsException($"There is no support for arguments of type '{type.Name}'.");
         }
     }
 }
