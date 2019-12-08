@@ -73,6 +73,17 @@ namespace Clap.Tests
             AssertThat(() => Arguments.Parse<SingleIntegerOptions>("-value", CultureInfo.InvariantCulture)).ThrowsException();
         }
 
+        /// <summary>
+        /// Checks that we can correctly detect an enum.
+        /// </summary>
+        [Fact]
+        public static void SingleEnumOption()
+        {
+            SingleEnumOptions options = Arguments.Parse<SingleEnumOptions>("-type type2", CultureInfo.InvariantCulture);
+            AssertThat(options).IsNotNull().IsExactlyInstanceOf<SingleEnumOptions>();
+            AssertThat(options.Type).IsEqualTo(SingleEnumOptions.Types.Type2);
+        }
+
         private class SingleBooleanOptions
         {
             public bool Value { get; set; }
@@ -82,6 +93,17 @@ namespace Clap.Tests
         {
             [Alias("v", "val")]
             public int Value { get; set; } = 1337;
+        }
+
+        private class SingleEnumOptions
+        {
+            public enum Types
+            {
+                Type1,
+                Type2,
+            }
+
+            public Types Type { get; set; }
         }
     }
 }
