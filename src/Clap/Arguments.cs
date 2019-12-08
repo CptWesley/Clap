@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 
 namespace Clap
@@ -98,11 +99,13 @@ namespace Clap
 
             object result = Activator.CreateInstance(type);
             Dictionary<string, PropertyInfo> options = CreateAliasMap(type);
+            PropertyInfo[] unnamedOptions = CreateUnnamedMap(type);
             HashSet<PropertyInfo> setOptions = new HashSet<PropertyInfo>();
 
             PropertyInfo property = null;
             List<object> parsedArgs = new List<object>();
             string option = null;
+            int unnamedIndex = 0;
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
@@ -127,12 +130,20 @@ namespace Clap
                         }
                         else
                         {
-                            // Handle unknown option?
+                            throw new Exception($"Option '{option}' was not recognized.");
                         }
                     }
                     else
                     {
-                        // Handle non-option arguments.
+                        if (unnamedIndex < unnamedOptions.Length)
+                        {
+                            property = unnamedOptions[unnamedIndex++];
+                            i--;
+                        }
+                        else
+                        {
+                            // Handle too many unnamed arguments.
+                        }
                     }
                 }
                 else if (property != null)
@@ -253,6 +264,12 @@ namespace Clap
 
             return options;
         }
+
+        private static PropertyInfo[] CreateUnnamedMap(Type type)
+            => type.GetProperties()
+            .Where(x => x.GetCustomAttribute<UnnamedAttribute>() != null)
+            .OrderBy(x => x.GetCustomAttribute<UnnamedAttribute>().Order)
+            .ToArray();
 
         private static void AddProperty(Dictionary<string, PropertyInfo> options, string name, PropertyInfo property)
         {

@@ -128,6 +128,52 @@ namespace Clap.Tests
             AssertThat(options.Pettable).IsTrue();
         }
 
+        /// <summary>
+        /// Checks that we can correctly detect an unnamed option.
+        /// </summary>
+        [Fact]
+        public static void SingleUnnamedOptionSet()
+        {
+            SingleUnnamedOptions options = Arguments.Parse<SingleUnnamedOptions>("42", CultureInfo.InvariantCulture);
+            AssertThat(options).IsNotNull().IsExactlyInstanceOf<SingleUnnamedOptions>();
+            AssertThat(options.Value).IsEqualTo(42);
+        }
+
+        /// <summary>
+        /// Checks that we can correctly detect the lack of an unnamed option.
+        /// </summary>
+        [Fact]
+        public static void SingleUnnamedOptionUnset()
+        {
+            SingleUnnamedOptions options = Arguments.Parse<SingleUnnamedOptions>(string.Empty, CultureInfo.InvariantCulture);
+            AssertThat(options).IsNotNull().IsExactlyInstanceOf<SingleUnnamedOptions>();
+            AssertThat(options.Value).IsEqualTo(0);
+        }
+
+        /// <summary>
+        /// Checks that we can correctly detect the values for automatically ordered unnamed options.
+        /// </summary>
+        [Fact]
+        public static void AutoOrderedUnnamedOptions()
+        {
+            TwoAutoOrderedUnnamedOptions options = Arguments.Parse<TwoAutoOrderedUnnamedOptions>("20 30", CultureInfo.InvariantCulture);
+            AssertThat(options).IsNotNull().IsExactlyInstanceOf<TwoAutoOrderedUnnamedOptions>();
+            AssertThat(options.Value1).IsEqualTo(20);
+            AssertThat(options.Value2).IsEqualTo(30);
+        }
+
+        /// <summary>
+        /// Checks that we can correctly detect the values for manually ordered unnamed options.
+        /// </summary>
+        [Fact]
+        public static void ManuallyOrderedUnnamedOptions()
+        {
+            TwoOrderedUnnamedOptions options = Arguments.Parse<TwoOrderedUnnamedOptions>("20 30", CultureInfo.InvariantCulture);
+            AssertThat(options).IsNotNull().IsExactlyInstanceOf<TwoOrderedUnnamedOptions>();
+            AssertThat(options.Value2).IsEqualTo(20);
+            AssertThat(options.Value1).IsEqualTo(30);
+        }
+
         private class SingleBooleanOptions
         {
             public bool Value { get; set; }
@@ -179,6 +225,30 @@ namespace Clap.Tests
 
             [Alias("p")]
             public bool Pettable { get; set; }
+        }
+
+        private class SingleUnnamedOptions
+        {
+            [Unnamed]
+            public int Value { get; set; }
+        }
+
+        private class TwoAutoOrderedUnnamedOptions
+        {
+            [Unnamed]
+            public int Value1 { get; set; }
+
+            [Unnamed]
+            public int Value2 { get; set; }
+        }
+
+        private class TwoOrderedUnnamedOptions
+        {
+            [Unnamed(2)]
+            public int Value1 { get; set; }
+
+            [Unnamed(1)]
+            public int Value2 { get; set; }
         }
     }
 }
